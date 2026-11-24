@@ -49,3 +49,8 @@ The client-reported bag-family and merchant APIs need live validation in WoW For
 The addon registers as the `AmmoGuard` module with `TavernersCore`, uses Core's database and notification services, and writes relevant events to the shared local diagnostics log. Open the Core diagnostics window with `/tcore`.
 
 Settings are stored in `TavernersAmmoGuardDB`; the default configuration is both ammo types, maximum special-bag capacity, and a 200-ammo warning threshold.
+
+
+## Shared settings (1.1.0)
+
+Ammo Guard now registers its enabled state, warning threshold, automatic restocking and popup preferences with TavernersCore. These are available in `/tsettings`. Restocking remains subject to live merchant, equipped ammunition and compatible quiver/ammo-pouch checks; test purchases carefully in game.
