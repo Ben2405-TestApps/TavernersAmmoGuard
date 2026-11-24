@@ -173,6 +173,17 @@ events:SetScript("OnEvent", function(_, event, unit)
   end
 end)
 
+-- Ammo totals can change as shots are fired without a bag event on every
+-- client build, so perform a lightweight periodic check as a safety net.
+local scanElapsed = 0
+events:SetScript("OnUpdate", function(_, elapsed)
+  scanElapsed = scanElapsed + elapsed
+  if scanElapsed >= 4 then
+    scanElapsed = 0
+    Ammo:CheckAmmo(true)
+  end
+end)
+
 SLASH_TAVERNERSAMMOGUARD1 = "/ammo"
 SLASH_TAVERNERSAMMOGUARD2 = "/tammoguard"
 SlashCmdList = SlashCmdList or {}
