@@ -16,6 +16,7 @@ local Defaults = {
   popup = true,
 }
 local DB = Core.Database:Register("TavernersAmmoGuardDB", Defaults, 1)
+Core.Settings:Register("AmmoGuard", DB, {enabled={label="Enable Ammo Guard",type="boolean",default=true}, warningThreshold={label="Warning threshold",type="number",default=200,min=0,max=5000,step=50}, autoRestock={label="Automatic restocking",type="boolean",default=true}, popup={label="Popup warnings",type="boolean",default=true}})
 local Ammo = {name = ADDON or "TavernersAmmoGuard", db = DB, Core = Core}
 _G.TavernersAmmoGuard = Ammo
 Core:RegisterModule("AmmoGuard", Ammo)
