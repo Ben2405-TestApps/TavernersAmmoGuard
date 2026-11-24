@@ -109,6 +109,12 @@ end
 function UI:Refresh()
   if not frame then return end
   local status = Ammo:GetStatus()
+  if not status.eligible then
+    countText:SetText("--")
+    detailText:SetText("Ammo Guard inactive for this class")
+    statusText:SetText("Available to Hunters, Rogues and Warriors only.")
+    return
+  end
   if not status.equipped then
     countText:SetText("--")
     detailText:SetText("No supported ammunition equipped")
