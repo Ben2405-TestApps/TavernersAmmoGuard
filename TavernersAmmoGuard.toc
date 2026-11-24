@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: Taverners Ammo Guard
+## Notes: Warns when ammunition is low and restocks at merchants.
+## Author: The Taverners Guild
+## Version: 1.0.0
+## Dependencies: TavernersCore
+## SavedVariables: TavernersAmmoGuardDB
+## X-Category: Hunter
+## X-License: MIT
+AmmoGuard.lua
+UI.lua
