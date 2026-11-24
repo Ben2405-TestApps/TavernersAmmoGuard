@@ -21,6 +21,13 @@ _G.TavernersAmmoGuard = Ammo
 Core:RegisterModule("AmmoGuard", Ammo)
 
 local lastWarningItem
+
+-- Only classes that can use the classic ranged-ammunition system are eligible.
+local function IsEligibleClass()
+  if not UnitClass then return false end
+  local _, classToken = UnitClass("player")
+  return classToken == "HUNTER" or classToken == "ROGUE" or classToken == "WARRIOR"
+end
 local function SafeCall(fn, ...)
   if type(fn) ~= "function" then return nil end
   local ok, a, b, c, d, e = pcall(fn, ...)
@@ -66,9 +73,12 @@ local function IsSupported(info)
 end
 
 function Ammo:GetStatus()
+  if not IsEligibleClass() then
+    return {eligible=false, equipped=false, count=0, threshold=tonumber(DB.warningThreshold) or 200}
+  end
   local info = GetEquippedAmmo()
   if not info or not IsSupported(info) then
-    return {equipped=false, count=0, threshold=tonumber(DB.warningThreshold) or 200}
+    return {eligible=true, equipped=false, count=0, threshold=tonumber(DB.warningThreshold) or 200}
   end
   info.equipped = true
   info.threshold = tonumber(DB.warningThreshold) or 200
@@ -78,16 +88,18 @@ end
 
 local function CountFreeSlotsForAmmo(info)
   local freeSlots = 0
-  if not GetContainerNumFreeSlots then return 0 end
-  for bag = 0, 4 do
+  if not GetContainerNumFreeSlots or not GetItemFamily or not bit or not bit.band then return 0 end
+  local itemFamily = tonumber(GetItemFamily(info.id)) or 0
+  if itemFamily == 0 then return 0 end
+
+  -- Bag 0 is the general backpack. Deliberately inspect only equipped bags
+  -- with a non-zero family mask matching this projectile (quiver / ammo pouch).
+  for bag = 1, 4 do
     local free, family = GetContainerNumFreeSlots(bag)
     free, family = tonumber(free) or 0, tonumber(family) or 0
-    local compatible = family == 0
-    if not compatible and GetItemFamily and bit and bit.band then
-      local itemFamily = tonumber(GetItemFamily(info.id)) or 0
-      compatible = bit.band(family, itemFamily) ~= 0
+    if family ~= 0 and bit.band(family, itemFamily) ~= 0 then
+      freeSlots = freeSlots + free
     end
-    if compatible then freeSlots = freeSlots + free end
   end
   return freeSlots
 end
@@ -102,6 +114,7 @@ local function FindMerchantAmmo(itemID)
 end
 
 function Ammo:Restock()
+  if not IsEligibleClass() then return false, "Ammo Guard restocking is only available to Hunters, Rogues and Warriors." end
   if not DB.enabled or not DB.autoRestock then return false, "Automatic restocking is disabled." end
   if not MerchantFrame or not MerchantFrame:IsShown() then return false, "Visit an ammunition merchant first." end
   local info = GetEquippedAmmo()
@@ -110,7 +123,7 @@ function Ammo:Restock()
   local merchantIndex = FindMerchantAmmo(info.id)
   if not merchantIndex then return false, "This merchant does not sell your equipped ammunition." end
   local freeSlots = CountFreeSlotsForAmmo(info)
-  if freeSlots <= 0 then return false, "No free inventory or compatible quiver slots." end
+  if freeSlots <= 0 then return false, "No free space in an equipped compatible quiver or ammo pouch. General bags are not used." end
 
   local maxStack = math.max(1, info.maxStack or 200)
   local merchantMax = (GetMerchantItemMaxStack and tonumber(GetMerchantItemMaxStack(merchantIndex))) or maxStack
@@ -127,7 +140,10 @@ function Ammo:Restock()
 end
 
 function Ammo:CheckAmmo(showPopup)
-  if not DB.enabled then return end
+  if not DB.enabled or not IsEligibleClass() then
+    if self.UI and self.UI.Refresh then self.UI:Refresh() end
+    return
+  end
   local status = self:GetStatus()
   if not status.equipped then return end
   if status.low then
@@ -144,6 +160,7 @@ function Ammo:CheckAmmo(showPopup)
 end
 
 function Ammo:OnMerchantShow()
+  if not IsEligibleClass() then return end
   local status = self:GetStatus()
   if status.equipped and status.low and DB.autoRestock then
     local ok, reason = self:Restock()
